@@ -1,4 +1,4 @@
-package be.ugent.mmlab.fno;
+package be.ugent.mmlab.fno.java;
 
 
 import java.util.ArrayList;

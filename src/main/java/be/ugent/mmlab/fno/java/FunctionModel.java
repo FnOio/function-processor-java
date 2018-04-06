@@ -1,4 +1,4 @@
-package be.ugent.mmlab.fno;
+package be.ugent.mmlab.fno.java;
 
 import org.eclipse.rdf4j.model.IRI;
 import org.eclipse.rdf4j.model.Value;
