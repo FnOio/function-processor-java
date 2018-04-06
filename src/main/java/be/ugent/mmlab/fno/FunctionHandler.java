@@ -13,6 +13,8 @@ import net.minidev.json.JSONArray;
 import net.minidev.json.JSONObject;
 import net.minidev.json.parser.JSONParser;
 import net.minidev.json.parser.ParseException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.tools.JavaCompiler;
 import javax.tools.ToolProvider;
@@ -24,12 +26,30 @@ import javax.tools.ToolProvider;
  */
 public class FunctionHandler {
 
+    // Log
+    private static final Logger log =
+            LoggerFactory.getLogger(FunctionHandler.class);
+
     public String basePath;
 
     public Map<String, FunctionModel> functions = new HashMap();
 
     public FunctionHandler(String path) {
         this.basePath = path;
+
+//        // DEBUG
+//        Class cls = this.getClass(path + "/GrelFunctions.java", "GrelFunctions");
+//        Class<?> params[] = new Class[1];
+//        params[0] = String.class;
+//        FunctionModel fn = null;
+//        try {
+//            String[] args = new String[1];
+//            args[0] = "http://semweb.mmlab.be/ns/grel#valueParameter";
+//            fn = new FunctionModel("http://semweb.mmlab.be/ns/grel#isSet", cls.getDeclaredMethod("isSet", params), args);
+//        } catch (NoSuchMethodException e) {
+//            e.printStackTrace();
+//        }
+//        this.put(fn);
         this.loadFromDisk();
     }
 
@@ -39,7 +59,8 @@ public class FunctionHandler {
         try {
             a = (JSONObject) parser.parse(new FileReader(this.basePath + "/metadata.json"));
         } catch (ParseException | FileNotFoundException e) {
-            e.printStackTrace();
+            log.debug("not found! Please make sure you have a folder `resources/functions` in your working dir! Please check the source of RML-Mapper for an example", e);
+            return false;
         }
         JSONArray files = (JSONArray) a.get("files");
         for (int i = 0; i < files.size(); i++) {
@@ -56,9 +77,18 @@ public class FunctionHandler {
                     params[k] = this.getParamType(param.getAsString("type"));
                     args[k] = param.getAsString("url");
                 }
+                String outs[] = new String[0];
+                if (functionObj.containsKey("outputs")) {
+                    JSONArray outputs = (JSONArray) functionObj.get("outputs");
+                    outs = new String[outputs.size()];
+                    for (int k = 0; k < outputs.size(); k++) {
+                        JSONObject out = (JSONObject) outputs.get(k);
+                        outs[k] = out.getAsString("type");
+                    }
+                }
                 FunctionModel fn = null;
                 try {
-                    fn = new FunctionModel(functionObj.getAsString("url"), cls.getDeclaredMethod(functionObj.getAsString("name"), params), args);
+                    fn = new FunctionModel(functionObj.getAsString("url"), cls.getDeclaredMethod(functionObj.getAsString("name"), params), args, outs);
                 } catch (NoSuchMethodException e) {
                     e.printStackTrace();
                 }
@@ -72,6 +102,10 @@ public class FunctionHandler {
         switch (type) {
             case "xsd:string":
                 return String.class;
+            case "xsd:integer":
+                return int.class;
+            case "xsd:decimal":
+                return double.class;
             default:
                 throw new Error("Couldn't derive type from " + type);
         }
