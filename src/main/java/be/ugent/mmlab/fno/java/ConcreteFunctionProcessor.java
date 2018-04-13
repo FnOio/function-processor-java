@@ -1,6 +1,7 @@
 package be.ugent.mmlab.fno.java;
 
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Map;
 
@@ -40,8 +41,20 @@ public class ConcreteFunctionProcessor {
             } catch (Exception e) {
                 log.error(e.getMessage());
             }
-            log.debug("basePath: " + basePath);
-            handler = new FunctionHandler(basePath + "/resources/functions");
+            String folderPath = basePath + "/resources/functions";
+            File f = new File(folderPath + "/metadata.json");
+            if (!f.exists() || f.isDirectory()) {
+                // try one directory up
+                folderPath = basePath + "/../resources/functions";
+            }
+
+            f = new File(folderPath + "/metadata.json");
+            if (!f.exists() || f.isDirectory()) {
+                // Didn't work, let's leave it at that
+                folderPath = basePath + "/resources/functions";
+            }
+            log.debug("folderPath: " + folderPath);
+            handler = new FunctionHandler(folderPath);
             instance = new ConcreteFunctionProcessor();
         }
         return instance;
@@ -56,7 +69,7 @@ public class ConcreteFunctionProcessor {
         FunctionModel fn = handler.get(function);
 
         if (fn == null) {
-            log.error("An implementation of function " + function + " was not found in `resources/functions`.");
+            log.error("An implementation of function " + function + " was not found in `" + handler.basePath + "`.");
             //TODO: wmaroy
             return new ArrayList<>();
         }
